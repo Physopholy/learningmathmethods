@@ -6,12 +6,12 @@ print('Enter guesses for unknown variables.')
 t=45
 t=273+t
 #p=float(input("Enter P(bar):"))
-p=1.5
+p=1.35
 #x1=float(input("Enter x1:"))
 x1=.259
 x2=1-x1
 #y1=float(input("Enter y1:"))
-y1=.75
+y1=.735
 y2=1-y1
 #psat1=float(input("Enter Psat1(bar):"))
 psat1=2.34218
@@ -26,7 +26,8 @@ b12=-680.65
 del12=2*b12-b1-b2
 
 
-a=float(input("Enter A_prime for margules eqn.:"))
+#a=float(input("Enter A_prime for margules eqn.:"))
+a=0.93
 
 def margules(x,a_prime): #returns gamma for the given x
 	g=2.718281828459045**(a_prime*(1-x)**2)
@@ -38,19 +39,19 @@ g2=margules(x2,a)
 def gammaphi(y1,y2,p,t,x1,x2,g1,g2,psat1,psat2):
 
 	def phi_solver(b,p,psat,y,del12,t): #just a subroutine for phi
-		phi=2.718281828459045**((b*(p-psat)+p*y**2*del12)/(83.1451*t))
+		phi=2.718281828459045**((b*(p-psat)+p*(1-y)**2*del12)/(83.1451*t))
 		return(phi)
 
-	def obj(y,p,phi,x,gamma,psat): #function to be rooted
-		lhs=y*p*phi
+	def obj(y,p,b,del12,t,x,gamma,psat): #function to be rooted
+		lhs=y*p*2.718281828459045**((b*(p-psat)+p*(1-y)**2*del12)/(83.1451*t))
 		rhs=x*gamma*psat
 		f=lhs-rhs
 		return(f)
 
-	def deriv(y,dy,p,dp,phi,x,gamma,psat): #centered-difference approximation
-		f_0=obj(y-dy,p-dp,phi,x,gamma,psat)
+	def deriv(y,dy,p,dp,b,del12,t,x,gamma,psat): #centered-difference approximation
+		f_0=obj(y-dy,p-dp,b,del12,t,x,gamma,psat)
 		#print('f_0=',f_0)
-		f_1=obj(y+dy,p+dp,phi,x,gamma,psat)
+		f_1=obj(y+dy,p+dp,b,del12,t,x,gamma,psat)
 		#print('f_1=',f_1)
 		dy_dx=(f_1-f_0)/(2*(dy+dp))
 		#print('dydx=',dy_dx)
@@ -58,27 +59,25 @@ def gammaphi(y1,y2,p,t,x1,x2,g1,g2,psat1,psat2):
 
 	
 
-	phi1=phi_solver(b1,p,psat1,y2,del12,t) #these lines just initialize error
-	phi2=phi_solver(b2,p,psat2,y1,del12,t)
-	Fyp=np.array([[obj(y1,p,phi1,x1,g1,psat1)],[obj(y2,p,phi2,x2,g2,psat2)]])
+	phi1=phi_solver(b1,p,psat1,y1,del12,t) #these lines just initialize error
+	phi2=phi_solver(b2,p,psat2,y2,del12,t)
+	Fyp=np.array([[obj(y1,p,b1,del12,t,x1,g1,psat1)],[obj(y2,p,b2,del12,t,x2,g2,psat2)]])
 	error=np.linalg.norm(Fyp)
 	index=0
-	x=np.array([[y1],[p]])
+	#x=np.array([[y1],[p]])
 
-	while error>0.000001:
+	while error>0.000001 and index<100:
 		index=index+1
 		print(index)
-		phi1=phi_solver(b1,p,psat1,y2,del12,t)
-		phi2=phi_solver(b2,p,psat2,y1,del12,t)
 
-		dobj1_dy1=deriv(y1,.00000001,p,0,phi1,x1,g1,psat1) #check these
-		dobj1_dp=deriv(y1,0,p,.00000001,phi1,x1,g1,psat1)
-		dobj2_dy1=deriv(y2,.00000001,p,0,phi2,x2,g2,psat2)
-		dobj2_dp=deriv(y2,0,p,.00000001,phi2,x2,g2,psat2)
+		dobj1_dy1=deriv(y1,.00000001,p,0,b1,del12,t,x1,g1,psat1) #check these
+		dobj1_dp=deriv(y1,0,p,.00000001,b1,del12,t,x1,g1,psat1)
+		dobj2_dy1=deriv(y2,-.00000001,p,0,b2,del12,t,x2,g2,psat2)
+		dobj2_dp=deriv(y2,0,p,.00000001,b2,del12,t,x2,g2,psat2)
 
-		#x=np.array([[y1],[p]])
+		x=np.array([[y1],[p]])
 		print('x',x)
-		Fyp=np.array([[obj(y1,p,phi1,x1,g1,psat1)],[obj(y2,p,phi2,x2,g2,psat2)]])
+		Fyp=np.array([[obj(y1,p,b1,del12,t,x1,g1,psat1)],[obj(y2,p,b2,del12,t,x2,g2,psat2)]])
 		print('fyp',Fyp)
 		jacob=np.array([[dobj1_dy1,dobj1_dp],[dobj2_dy1,dobj2_dp]])
 		print('jacob',jacob)
@@ -90,14 +89,18 @@ def gammaphi(y1,y2,p,t,x1,x2,g1,g2,psat1,psat2):
 
 		#start here, need to figure out how to slice numpy array x
 
-		y1=x[0]
+		y1=float(x[0])
 		print('y1',y1)
 		y2=1-y1
 		print('y2',y2)
-		p=x[1]
+		p=float(x[1])
 		print('p',p)
+		Fyp=np.array([[obj(y1,p,b1,del12,t,x1,g1,psat1)],[obj(y2,p,b2,del12,t,x2,g2,psat2)]])
 		error=np.linalg.norm(Fyp)
 		print('error',error)
+
+	phi1=phi_solver(b1,p,psat1,y1,del12,t)
+	phi2=phi_solver(b2,p,psat2,y2,del12,t)
 
 	return(p,t,y1,y2,phi1,phi2,x1,x2,g1,g2,psat1,psat2,index)
 
