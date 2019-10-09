@@ -50,8 +50,8 @@ def gammaphi(y1,y2,p,t,x1,x2,g1,g2,psat1,psat2):
 	phi2=phi_solver(b2,p,psat2,y1,del12,t)
 	a=obj(y1,p,phi1,x1,g1,psat1)
 	b=obj(y2,p,phi2,x2,g2,psat2)
-	f_yp=np.array([a],[b])
-	error=np.linalg.norm(f_yp)
+	Fyp=np.array([[a],[b]])
+	error=np.linalg.norm(Fyp)
 
 	while error>0.000001:
 		phi1=phi_solver(b1,p,psat1,y2,del12,t)
@@ -62,38 +62,37 @@ def gammaphi(y1,y2,p,t,x1,x2,g1,g2,psat1,psat2):
 		dobj2_dy1=deriv(y2,.00000001,p,0,phi2,x2,g2,psat2)
 		dobj2_dp=deriv(y2,0,p,.00000001,phi2,x2,g2,psat2)
 
-		x=np.array([y1],[p])
+		x=np.array([[y1],[p]])
 		a=obj(y1,p,phi1,x1,g1,psat1)
 		b=obj(y2,p,phi2,x2,g2,psat2)
-		f_yp=np.array([obj(y1,p,phi1,x1,g1,psat1)],[obj(y2,p,phi2,x2,g2,psat2)])
-		jacob=np.array([dobj1_dy1,dobj1_dp],[dobj2_dy1,dobj2_dp])
+		Fyp=np.array([[obj(y1,p,phi1,x1,g1,psat1)],[obj(y2,p,phi2,x2,g2,psat2)]])
+		jacob=np.array([[dobj1_dy1,dobj1_dp],[dobj2_dy1,dobj2_dp]])
 		jinv=np.linalg.inv(jacob)
 
-		x=x-np.dot(jinv,f_yp)
+		x=x-np.dot(jinv,Fyp)
 
 		#start here, need to figure out how to slice numpy array x
 
 		y1=x[0]
 		y2=1-y1
 		p=x[1]
-		error=np.linalg.norm(f_yp)
+		error=np.linalg.norm(Fyp)
 
-	list=[p,t,y1,y2,phi1,phi2,x1,x2,g1,g2,psat1,psat2] #this compiles the results of the function
-	return(list)
+	return(p,t,y1,y2,phi1,phi2,x1,x2,g1,g2,psat1,psat2)
 
 answer=gammaphi(y1,y2,p,t,x1,x2,g1,g2,psat1,psat2)
-p=list[0]
-t=list[1]
-y1=list[2]
-y2=list[3]
-phi1=list[4]
-phi2=list[5]
-x1=list[6]
-x2=list[7]
-g1=list[8]
-g2=list[9]
-psat1=list[10]
-psat2=list[11]
+p=answer[0]
+t=answer[1]
+y1=answer[2]
+y2=answer[3]
+phi1=answer[4]
+phi2=answer[5]
+x1=answer[6]
+x2=answer[7]
+g1=answer[8]
+g2=answer[9]
+psat1=answer[10]
+psat2=answer[11]
 
 print('P(bar)=',p)
 print('T(K)=',t)
